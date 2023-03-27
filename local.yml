@@ -1,0 +1,70 @@
+version: "3.9"
+
+services:
+    api:
+        restart: always
+        build:
+            context: ./backend
+            dockerfile: ./docker/local/Dockerfile
+        volumes:
+            - /app/node_modules
+            - ./backend:/app
+        depends_on:
+            - mongodb
+        ports:
+            - "5000:5000"
+        environment:
+            NODE_ENV: ${NODE_ENV}
+            MONGO_URI: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb
+        networks:
+            - nextapp
+
+    client:
+        build:
+            context: ./frontend-client
+            dockerfile: ./docker/local/Dockerfile
+        restart: on-failure
+        ports:
+            - "3000:3000"
+        volumes:
+            - /app/node_modules
+            - ./frontend-client:/app
+        environment:
+            - WATCHPACK_POLLING=true
+        networks:
+            - nextapp
+
+    client-admin:
+        build:
+            context: ./frontend-admin
+            dockerfile: ./docker/local/Dockerfile
+        restart: on-failure
+        ports:
+            - "3001:3000"
+        volumes:
+            - /app/node_modules
+            - ./frontend-admin:/app
+        environment:
+            - WATCHPACK_POLLING=true
+        networks:
+            - nextapp
+
+    mongodb:
+        image: mongo:5.0.6-focal
+        restart: always
+        ports:
+            - "27017:27017"
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+            MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+        volumes:
+            - mongodb-data:/data/db
+        networks:
+            - nextapp
+
+networks:
+    nextapp:
+        driver: bridge
+
+volumes:
+    mongodb-data:
